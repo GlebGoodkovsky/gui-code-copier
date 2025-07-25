@@ -1,10 +1,3 @@
-You are absolutely right. My apologies for including specific paths to your directories. A good README should be general so anyone can follow it easily.
-
-I will update the README.md to use generic placeholder paths like your_project_directory and assume a standard setup for virtual environments where the .venv lives inside the cloned repository itself.
-
-Here is the updated README.md with generic paths and improved clarity for any user:
-
-Generated markdown
 # 🖼️ Python GUI Code Copier
 
 A minimalist, cross-platform desktop application that provides an intuitive graphical interface to select multiple code files from any project directory and copy their combined content (with filename headers) to your system's clipboard. Perfect for compiling code snippets for documentation, notes, or sharing.
@@ -16,7 +9,10 @@ A minimalist, cross-platform desktop application that provides an intuitive grap
 -   **Graphical Interface:** Easy-to-use window with mouse-clickable elements and checkboxes.
 -   **Checkbox Selection:** Visually select multiple files from the currently displayed directory.
 -   **Sticky Selections:** Selected files remain marked even when navigating to different folders and returning.
--   **Directory Navigation:** Click on `[ folder_name ]` to drill down into subdirectories or `[ .. ] Go Up` to ascend. The "Change Dir..." button provides a system file dialog for direct folder selection.
+-   **Directory Navigation (within GUI):**
+    *   Click on `[ folder_name ]` to drill down into subdirectories.
+    *   Click `[ .. ] Go Up` to ascend to the parent directory.
+    *   Use the **"Change Dir..."** button to open a system file dialog for direct selection of any folder on your machine.
 -   **Batch Copy:** A single click copies all currently and previously selected files' content into a single clipboard entry.
 -   **Cross-Platform:** Designed to run seamlessly on Linux, Windows, and macOS.
 
@@ -90,9 +86,10 @@ To run this project on your machine, follow these steps.
 ## 📚 Usage
 
 1.  **Activate your virtual environment:**
-    *   Navigate into the `gui-code-copier` directory (if you're not already there):
+    *   Navigate into the `gui-code-copier` project directory:
         ```bash
         cd /path/to/gui-code-copier
+        # Example: cd ~/github/public/gui-code-copier
         ```
     *   Then activate the environment:
         ```bash
@@ -100,33 +97,22 @@ To run this project on your machine, follow these steps.
         ```
         Your terminal prompt should show `(.venv)`.
 
-2.  **Navigate to the project directory you want to copy files from:**
-    *   This can be *any* directory on your system where your code files reside.
+2.  **Run the GUI script:**
+    *   Since you are already in the `gui-code-copier` directory and the virtual environment is active, you can run the script directly by its filename:
     ```bash
-    cd /path/to/your/actual-code-project/
-    # For example: cd ~/Documents/my-awesome-app/
-    ```
-
-3.  **Run the GUI script:**
-    *   Even though you're in a different project directory, you need to point to the script's actual location.
-    ```bash
-    python /path/to/gui-code-copier/gui_copycode.py
-    # For example (if cloned into ~/github/public/):
-    # python ~/github/public/gui-code-copier/gui_copycode.py
+    python gui_copycode.py
     ```
     A GUI window will appear.
+    *   **Navigate within the GUI:** Use the `[ folder_name ]`, `[ .. ] Go Up`, or **"Change Dir..."** button to browse to *any* directory on your system where your code files reside.
     *   Click checkboxes next to files to select them.
-    *   Click on `[ folder_name ]` to navigate into directories.
-    *   Click `[ .. ] Go Up` to go to the parent directory.
     *   Click "Select All Displayed" or "Deselect All Displayed" for current view.
-    *   Click **"Copy ALL Selected Code 📋"** to copy all files you've checked (from any directory) to your clipboard.
+    *   Click **"Copy ALL Selected Code 📋"** to copy all files you've checked (from any directory, even if not currently visible) to your clipboard.
 
 ### Deactivating the Virtual Environment
 
 When you're done using the script, you can exit the virtual environment:
 ```bash
 deactivate
-```
 
 ## ⚠️ Troubleshooting
 
