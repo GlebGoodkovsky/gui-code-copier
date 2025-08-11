@@ -6,14 +6,12 @@ import os
 import pyperclip
 
 class CodeCopierApp:
-    # <<< NEW: A set of common file/folder names to ignore for a cleaner view.
-    # A 'set' is used because checking if an item is in a set is very fast!
     IGNORE_PATTERNS = {".git", "__pycache__", ".venv", ".vscode", ".idea", "node_modules", ".DS_Store"}
 
     def __init__(self, root):
         self.root = root
         self.root.title("Code Selector & Copier")
-        self.root.geometry("600x450")
+        self.root.geometry("600x475") # <<< CHANGED: Made the window a little taller for the status bar
         self.root.minsize(400, 300)
 
         self.selected_file_paths = set() 
@@ -26,23 +24,19 @@ class CodeCopierApp:
         # --- Directory Path Display Frame ---
         path_frame = tk.Frame(root, bd=2, relief="groove")
         path_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
-        path_frame.columnconfigure(0, weight=1) # <<< NEW: Allow the path label to expand
+        path_frame.columnconfigure(0, weight=1)
 
         self.path_label = tk.Label(path_frame, text=f"Current Dir: {self.current_directory}", wraplength=550, anchor="w")
-        self.path_label.grid(row=0, column=0, sticky="ew", padx=5, pady=2) # <<< CHANGED from .pack() to .grid()
+        self.path_label.grid(row=0, column=0, sticky="ew", padx=5, pady=2)
 
-        # <<< NEW: A variable to hold the state of our checkbox (True = hide, False = show).
         self.hide_ignored_var = tk.BooleanVar(value=True)
-
-        # <<< NEW: The actual checkbox widget to turn the filter on and off.
-        # The `command=self.load_files` makes the list refresh every time you click it!
         self.hide_checkbox = tk.Checkbutton(
             path_frame, 
             text="Hide Ignored", 
             variable=self.hide_ignored_var,
             command=self.load_files
         )
-        self.hide_checkbox.grid(row=0, column=1, padx=5) # <<< NEW: Placing the checkbox next to the path label.
+        self.hide_checkbox.grid(row=0, column=1, padx=5)
         
         # --- File List Frame (with Canvas and Scrollbar) ---
         list_frame = tk.Frame(root, bd=2, relief="sunken")
@@ -61,14 +55,11 @@ class CodeCopierApp:
 
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
-
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
 
         self.checkbox_vars = {}
         
-        self.load_files()
-
         # --- Buttons Frame ---
         button_frame = tk.Frame(root, bd=2, relief="ridge")
         button_frame.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
@@ -85,6 +76,14 @@ class CodeCopierApp:
         change_dir_btn = tk.Button(button_frame, text="Change Dir...", command=self.change_directory)
         change_dir_btn.pack(side="right", padx=5, pady=5)
 
+        # <<< NEW: The status bar widget at the bottom of the window.
+        # It has a "sunken" border to look like a real status bar.
+        self.status_bar = tk.Label(root, text="", bd=1, relief="sunken", anchor="w")
+        self.status_bar.grid(row=3, column=0, sticky="ew", padx=5, pady=(0, 5))
+
+        self.load_files() # Load initial files
+        self.update_status_bar() # <<< NEW: Set initial status bar text
+
 
     def load_files(self):
         for widget in self.scrollable_frame.winfo_children():
@@ -96,8 +95,6 @@ class CodeCopierApp:
         try:
             items = os.listdir(self.current_directory)
 
-            # <<< NEW: The magic happens here! 🧙‍♂️
-            # If our checkbox variable is True, we filter the 'items' list.
             if self.hide_ignored_var.get():
                 items = [item for item in items if item not in self.IGNORE_PATTERNS]
 
@@ -119,10 +116,8 @@ class CodeCopierApp:
 
             for f in files:
                 full_path = os.path.join(self.current_directory, f)
-                
                 is_selected = full_path in self.selected_file_paths
                 var = tk.BooleanVar(value=is_selected)
-                
                 checkbox = tk.Checkbutton(self.scrollable_frame, text=f, variable=var, anchor="w",
                                           justify="left", padx=5,
                                           command=lambda p=full_path, v=var: self.toggle_selection(p, v))
@@ -140,13 +135,20 @@ class CodeCopierApp:
             
         self.canvas.yview_moveto(0)
 
-    # ... (the rest of your methods are unchanged) ...
+    # <<< NEW: A dedicated method to update the status bar text.
+    def update_status_bar(self):
+        count = len(self.selected_file_paths)
+        # Use "file" for 1, "files" for 0 or more than 1.
+        file_text = "file" if count == 1 else "files"
+        self.status_bar.config(text=f"Total files selected: {count} {file_text}")
+
     def toggle_selection(self, file_path, var):
         if var.get():
             self.selected_file_paths.add(file_path)
         else:
             if file_path in self.selected_file_paths:
                 self.selected_file_paths.remove(file_path)
+        self.update_status_bar() # <<< CHANGED: Update the count!
 
     def change_directory(self):
         new_dir = filedialog.askdirectory(initialdir=self.current_directory)
@@ -170,6 +172,7 @@ class CodeCopierApp:
                 var.set(True)
                 full_path = os.path.join(self.current_directory, filename)
                 self.selected_file_paths.add(full_path)
+        self.update_status_bar() # <<< CHANGED: Update the count!
 
     def deselect_all_displayed_files(self):
         for filename, var in self.checkbox_vars.items():
@@ -178,6 +181,7 @@ class CodeCopierApp:
                 full_path = os.path.join(self.current_directory, filename)
                 if full_path in self.selected_file_paths:
                     self.selected_file_paths.remove(full_path)
+        self.update_status_bar() # <<< CHANGED: Update the count!
 
     def copy_all_selected_code(self):
         if not self.selected_file_paths:
