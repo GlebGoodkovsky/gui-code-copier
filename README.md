@@ -88,7 +88,6 @@ When you're done using the script, you can exit the virtual environment:
 deactivate
 ```
 
-```
 ## ⚠️ Troubleshooting
 
 - Window doesn't appear / Tkinter error:
