@@ -1,30 +1,48 @@
+# --- File: /home/wiphz/github/public/gui-code-copier/gui_copycode.py ---
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
 import pyperclip
 
 class CodeCopierApp:
+    # <<< NEW: A set of common file/folder names to ignore for a cleaner view.
+    # A 'set' is used because checking if an item is in a set is very fast!
+    IGNORE_PATTERNS = {".git", "__pycache__", ".venv", ".vscode", ".idea", "node_modules", ".DS_Store"}
+
     def __init__(self, root):
         self.root = root
         self.root.title("Code Selector & Copier")
         self.root.geometry("600x450")
         self.root.minsize(400, 300)
 
-        # Global set to store full paths of all selected files, regardless of current directory
         self.selected_file_paths = set() 
 
-        # Configure grid weights for responsive layout
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(1, weight=1)
 
-        self.current_directory = os.getcwd() # Start in the directory where the script is run
+        self.current_directory = os.getcwd()
         
         # --- Directory Path Display Frame ---
         path_frame = tk.Frame(root, bd=2, relief="groove")
         path_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
-        
+        path_frame.columnconfigure(0, weight=1) # <<< NEW: Allow the path label to expand
+
         self.path_label = tk.Label(path_frame, text=f"Current Dir: {self.current_directory}", wraplength=550, anchor="w")
-        self.path_label.pack(side="left", fill="x", expand=True, padx=5, pady=2)
+        self.path_label.grid(row=0, column=0, sticky="ew", padx=5, pady=2) # <<< CHANGED from .pack() to .grid()
+
+        # <<< NEW: A variable to hold the state of our checkbox (True = hide, False = show).
+        self.hide_ignored_var = tk.BooleanVar(value=True)
+
+        # <<< NEW: The actual checkbox widget to turn the filter on and off.
+        # The `command=self.load_files` makes the list refresh every time you click it!
+        self.hide_checkbox = tk.Checkbutton(
+            path_frame, 
+            text="Hide Ignored", 
+            variable=self.hide_ignored_var,
+            command=self.load_files
+        )
+        self.hide_checkbox.grid(row=0, column=1, padx=5) # <<< NEW: Placing the checkbox next to the path label.
         
         # --- File List Frame (with Canvas and Scrollbar) ---
         list_frame = tk.Frame(root, bd=2, relief="sunken")
@@ -47,9 +65,9 @@ class CodeCopierApp:
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
 
-        self.checkbox_vars = {} # Stores filename: tk.BooleanVar for *currently displayed* files
+        self.checkbox_vars = {}
         
-        self.load_files() # Load files when the app starts
+        self.load_files()
 
         # --- Buttons Frame ---
         button_frame = tk.Frame(root, bd=2, relief="ridge")
@@ -69,48 +87,47 @@ class CodeCopierApp:
 
 
     def load_files(self):
-        # Clear existing checkboxes and variables from previous directory view
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
-        self.checkbox_vars = {} # Reset this dict for the new directory's files
+        self.checkbox_vars = {}
 
-        # Update the displayed path label
         self.path_label.config(text=f"Current Dir: {self.current_directory}")
 
         try:
             items = os.listdir(self.current_directory)
+
+            # <<< NEW: The magic happens here! 🧙‍♂️
+            # If our checkbox variable is True, we filter the 'items' list.
+            if self.hide_ignored_var.get():
+                items = [item for item in items if item not in self.IGNORE_PATTERNS]
+
             items.sort(key=str.lower)
 
             dirs = [item for item in items if os.path.isdir(os.path.join(self.current_directory, item))]
             files = [item for item in items if os.path.isfile(os.path.join(self.current_directory, item))]
             
-            # --- Add 'Go Up' directory option ---
             if self.current_directory != os.path.abspath(os.sep):
                 up_dir_label = tk.Label(self.scrollable_frame, text="[ .. ] Go Up", fg="blue", cursor="hand2", anchor="w")
                 up_dir_label.pack(fill="x", padx=2, pady=1)
                 up_dir_label.bind("<Button-1>", lambda e: self.navigate_up_directory())
 
-            # --- Display Directories (clickable labels) ---
             for d in dirs:
                 dir_path = os.path.join(self.current_directory, d)
                 dir_label = tk.Label(self.scrollable_frame, text=f"[ {d} ]", fg="green", cursor="hand2", anchor="w")
                 dir_label.pack(fill="x", padx=2, pady=1)
                 dir_label.bind("<Button-1>", lambda e, path=dir_path: self.change_directory_to(path))
 
-            # --- Display Files (with checkboxes) ---
             for f in files:
                 full_path = os.path.join(self.current_directory, f)
                 
-                # Check if this file was previously selected (sticky selection logic!)
                 is_selected = full_path in self.selected_file_paths
                 var = tk.BooleanVar(value=is_selected)
                 
-                # Bind the checkbox state change to our tracking method
                 checkbox = tk.Checkbutton(self.scrollable_frame, text=f, variable=var, anchor="w",
                                           justify="left", padx=5,
                                           command=lambda p=full_path, v=var: self.toggle_selection(p, v))
                 checkbox.pack(fill="x", padx=2, pady=1)
-                self.checkbox_vars[f] = var # Keep track of currently displayed checkbox vars
+                self.checkbox_vars[f] = var
 
         except PermissionError:
             messagebox.showerror("Permission Denied", f"Cannot access directory: {self.current_directory}\nAttempting to go back to parent directory.")
@@ -123,11 +140,11 @@ class CodeCopierApp:
             
         self.canvas.yview_moveto(0)
 
-    # New method to toggle selection state in our global set
+    # ... (the rest of your methods are unchanged) ...
     def toggle_selection(self, file_path, var):
-        if var.get(): # If checkbox is now checked
+        if var.get():
             self.selected_file_paths.add(file_path)
-        else: # If checkbox is now unchecked
+        else:
             if file_path in self.selected_file_paths:
                 self.selected_file_paths.remove(file_path)
 
@@ -148,17 +165,15 @@ class CodeCopierApp:
             self.load_files()
 
     def select_all_displayed_files(self):
-        # Selects all files currently shown in the list
         for filename, var in self.checkbox_vars.items():
-            if not var.get(): # Only change if not already selected to avoid redundant calls
+            if not var.get():
                 var.set(True)
                 full_path = os.path.join(self.current_directory, filename)
                 self.selected_file_paths.add(full_path)
 
     def deselect_all_displayed_files(self):
-        # Deselects all files currently shown in the list
         for filename, var in self.checkbox_vars.items():
-            if var.get(): # Only change if selected
+            if var.get():
                 var.set(False)
                 full_path = os.path.join(self.current_directory, filename)
                 if full_path in self.selected_file_paths:
@@ -170,20 +185,18 @@ class CodeCopierApp:
             return
 
         selected_content = []
-        # Iterate through the global set of selected file paths
-        # Sort for consistent output order, though not strictly required
         sorted_paths = sorted(list(self.selected_file_paths), key=str.lower) 
 
         for full_path in sorted_paths:
-            filename = os.path.basename(full_path) # Get just the file name from the path
+            filename = os.path.basename(full_path)
             try:
                 with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
                     content = f.read()
-                selected_content.append(f"\n\n# --- File: {full_path} ---\n\n{content}") # Use full path in header for clarity
+                selected_content.append(f"\n\n# --- File: {full_path} ---\n\n{content}")
             except Exception as e:
                 messagebox.showwarning("File Read Error", f"Could not read selected file {full_path}: {e}\n(This file will be skipped.)")
         
-        if not selected_content: # Possible if all selected files had read errors
+        if not selected_content:
             messagebox.showinfo("No Content", "No readable content found from selected files.")
             return
 
@@ -197,6 +210,7 @@ class CodeCopierApp:
             print("\n--- Content to copy (manual copy if clipboard failed) ---\n")
             print(combined_code)
             print("\n--------------------------------------------------------\n")
+
 
 if __name__ == "__main__":
     root = tk.Tk()
