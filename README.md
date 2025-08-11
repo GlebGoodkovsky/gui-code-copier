@@ -86,7 +86,9 @@ pip install -r requirements.txt
 When you're done using the script, you can exit the virtual environment:
 ```bash
 deactivate
+```
 
+```
 ## ⚠️ Troubleshooting
 
 - Window doesn't appear / Tkinter error:
