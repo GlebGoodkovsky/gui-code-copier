@@ -20,6 +20,7 @@ class CodeCopierApp:
 
         self.style = ttk.Style(root)
         self.style.theme_use('clam')
+        # ... (all style configurations are the same) ...
         self.style.configure('TFrame', background=self.COLORS["bg"])
         self.style.configure('TLabel', background=self.COLORS["bg"], foreground=self.COLORS["text"], font=('Segoe UI', 9))
         self.style.configure('TCheckbutton', background=self.COLORS["bg"], foreground=self.COLORS["text"], font=('Segoe UI', 9))
@@ -64,8 +65,12 @@ class CodeCopierApp:
         search_label.grid(row=0, column=0, padx=(0, 5))
         search_entry = ttk.Entry(search_frame, textvariable=self.search_var, font=('Segoe UI', 9))
         search_entry.grid(row=0, column=1, sticky="ew")
+
+        # <<< NEW: A refresh button to manually reload the file list.
+        refresh_btn = ttk.Button(search_frame, text="🔄 Refresh", command=self.load_files)
+        refresh_btn.grid(row=0, column=2, padx=5)
         
-        # --- FILE LIST WIDGETS ---
+        # ... (rest of the __init__ method is unchanged) ...
         self.canvas = tk.Canvas(list_container, bg=self.COLORS["bg_list"], highlightthickness=0)
         self.scrollbar = ttk.Scrollbar(list_container, orient="vertical", command=self.canvas.yview)
         self.scrollable_frame = ttk.Frame(self.canvas, style='List.TFrame')
@@ -77,30 +82,27 @@ class CodeCopierApp:
         self.scrollbar.grid(row=0, column=1, sticky="ns")
         self.checkbox_vars = {}
         
-        # --- BUTTON WIDGETS ---
         select_all_btn = ttk.Button(button_frame, text="Select All Displayed", command=self.select_all_displayed_files)
         select_all_btn.pack(side="left", padx=(0, 5))
         deselect_all_btn = ttk.Button(button_frame, text="Deselect All Displayed", command=self.deselect_all_displayed_files)
         deselect_all_btn.pack(side="left", padx=(0, 5))
-        
-        # <<< NEW: The global "Clear All" button. Placed it right next to the others.
         clear_all_btn = ttk.Button(button_frame, text="Clear All Selections", command=self.clear_all_selections)
         clear_all_btn.pack(side="left")
-
         copy_btn = ttk.Button(button_frame, text="Copy ALL Selected Code 📋", command=self.copy_all_selected_code, style='Accent.TButton')
         copy_btn.pack(side="right")
         change_dir_btn = ttk.Button(button_frame, text="Change Dir...", command=self.change_directory)
         change_dir_btn.pack(side="right", padx=5)
 
-        # --- STATUS BAR ---
         self.status_bar = ttk.Label(root, text="", style='Status.TLabel', padding=(10, 3))
         self.status_bar.grid(row=4, column=0, sticky="ew", padx=10, pady=(0, 5))
 
         self.load_files()
         self.update_status_bar()
 
+    # ALL OTHER METHODS (load_files, clear_all_selections, etc.) ARE UNCHANGED.
+    # The new button just calls a method we already wrote!
+    
     def load_files(self):
-        # (This function is unchanged)
         search_term = self.search_var.get().lower()
         for widget in self.scrollable_frame.winfo_children(): widget.destroy()
         self.checkbox_vars = {}
@@ -134,63 +136,49 @@ class CodeCopierApp:
             messagebox.showerror("Error", f"An unexpected error occurred: {e}")
         self.canvas.yview_moveto(0)
 
-    # <<< NEW: The function for our global "Clear All" button.
     def clear_all_selections(self):
-        """Globally clears every file selection."""
         if not self.selected_file_paths:
             messagebox.showinfo("Already Clear", "No files were selected.")
             return
-
-        # The core of the new feature: empty the master set!
         self.selected_file_paths.clear()
-
-        # Now, update the UI to reflect this change.
-        self.load_files()  # Refresh the list view to uncheck any visible boxes.
-        self.update_status_bar() # Update the counter to "0".
+        self.load_files()
+        self.update_status_bar()
 
     def update_status_bar(self):
-        # (This function is unchanged)
         count = len(self.selected_file_paths)
         file_text = "file" if count == 1 else "files"
         self.status_bar.config(text=f"Total files selected: {count} {file_text}")
 
     def toggle_selection(self, file_path, var):
-        # (This function is unchanged)
         if var.get(): self.selected_file_paths.add(file_path)
         else: self.selected_file_paths.discard(file_path)
         self.update_status_bar()
 
     def change_directory(self):
-        # (This function is unchanged)
         new_dir = filedialog.askdirectory(initialdir=self.current_directory)
         if new_dir: self.change_directory_to(new_dir)
 
     def change_directory_to(self, path):
-        # (This function is unchanged)
         self.current_directory = path
         self.load_files()
 
     def navigate_up_directory(self):
-        # (This function is unchanged)
         parent_dir = os.path.dirname(self.current_directory)
         if parent_dir != self.current_directory: self.change_directory_to(parent_dir)
 
     def select_all_displayed_files(self):
-        # (This function is unchanged)
         all_displayed_paths = {os.path.join(self.current_directory, f) for f in self.checkbox_vars.keys()}
         self.selected_file_paths.update(all_displayed_paths)
         for var in self.checkbox_vars.values(): var.set(True)
         self.update_status_bar()
 
     def deselect_all_displayed_files(self):
-        # (This function is unchanged)
         all_displayed_paths = {os.path.join(self.current_directory, f) for f in self.checkbox_vars.keys()}
         self.selected_file_paths.difference_update(all_displayed_paths)
         for var in self.checkbox_vars.values(): var.set(False)
         self.update_status_bar()
 
     def copy_all_selected_code(self):
-        # (This function is unchanged)
         if not self.selected_file_paths:
             messagebox.showinfo("No Selection", "No files have been selected to copy.")
             return
